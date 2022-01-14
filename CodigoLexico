@@ -1,0 +1,205 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+
+typedef struct Token {
+    char *type, *token;
+}Token;
+
+bool isDelimiter(char ch) {
+    if (ch == ' ' || ch == '+' || ch == '-' || ch == '*' ||
+        ch == '/' || ch == ',' || ch == ';' || ch == '>' ||
+        ch == '<' || ch == '=' || ch == '(' || ch == ')' ||
+        ch == '[' || ch == ']' || ch == '{' || ch == '}'   )
+        return true;
+    return false;
+}
+
+bool isOperator(char ch) {
+    if (ch == '+' || ch == '-' || ch == '*' ||
+        ch == '/' || ch == '>' || ch == '<' ||
+        ch == '=')
+        return true;
+    return false;
+}
+
+bool validIdentifier(char* str) {
+    if (str[0] == '0' || str[0] == '1' || str[0] == '2' ||
+        str[0] == '3' || str[0] == '4' || str[0] == '5' ||
+        str[0] == '6' || str[0] == '7' || str[0] == '8' ||
+        str[0] == '9' || isDelimiter(str[0]) == true)
+        return false;
+    return true;
+}
+
+bool isKeyword(char* str) {
+    if (!strcmp(str, "if")          || !strcmp(str, "else")     ||
+        !strcmp(str, "while")       || !strcmp(str, "do")       ||
+        !strcmp(str, "break")       || !strcmp(str, "continue") || 
+        !strcmp(str, "int")         || !strcmp(str, "double")   || 
+        !strcmp(str, "float")       || !strcmp(str, "return")   || 
+        !strcmp(str, "char")        || !strcmp(str, "case")     || 
+        !strcmp(str, "char")        || !strcmp(str, "sizeof")   || 
+        !strcmp(str, "long")        || !strcmp(str, "short")    || 
+        !strcmp(str, "typedef")     || !strcmp(str, "switch")   || 
+        !strcmp(str, "unsigned")    || !strcmp(str, "void")     || 
+        !strcmp(str, "static")      || !strcmp(str, "struct")   || 
+        !strcmp(str, "goto"))
+        return (true);
+    return (false);
+}
+
+bool isInteger(char* str) {
+    int len = strlen(str);
+ 
+    if (len == 0)
+        return false;
+    
+    for (int i = 0; i < len; i++) {
+        if (str[i] != '0' && str[i] != '1' && str[i] != '2' && 
+            str[i] != '3' && str[i] != '4' && str[i] != '5' && 
+            str[i] != '6' && str[i] != '7' && str[i] != '8' && 
+            str[i] != '9' || (str[i]== '-' && i > 0))
+            return false;
+    }
+    return true;
+}
+
+bool isDouble(char* str) {
+    int i, len = strlen(str);
+    bool hasDecimal = false;
+ 
+    if (len == 0)
+        return false;
+    
+    for (i = 0; i < len; i++) {
+        if (str[i] != '0' && str[i] != '1' && str[i] != '2' && 
+            str[i] != '3' && str[i] != '4' && str[i] != '5' && 
+            str[i] != '6' && str[i] != '7' && str[i] != '8' && 
+            str[i] != '9' && str[i] != '.' ||(str[i] == '-' && i > 0))
+            return false;
+        if (str[i] == '.')
+            hasDecimal = true;
+    }
+    return hasDecimal;
+}
+
+Token *createToken(char *str , int bgn, int end, char *type) {
+    Token *newToken = (Token*)malloc(sizeof(Token));
+
+    char *token = (char*)malloc(sizeof(char)*(end-bgn+2));
+
+
+    if(end == bgn){
+        token[0] = str[end];
+        token[1] = '\0';
+    }else{
+        for(int i = bgn; i < end; i++) {
+        token[i-bgn] = str[i];
+        }token[end-bgn] = '\0';
+    }
+
+    newToken->token = token;
+    newToken->type = type;
+    
+    return newToken;
+}
+
+int tokensQty(char *str) {
+    int end = 0, bgn = 0, len = strlen(str), count = 0;
+
+    while(end <= len && bgn <= end) {
+        if(!isDelimiter(str[end]))
+            end++;
+
+        if(isDelimiter(str[end]) && end == bgn) {
+            if(isOperator(str[end])) {
+                count++;
+            }else if(str[end] != ' ') {
+                count++;
+            }
+            end++; 
+            bgn = end;
+        }else if(isDelimiter(str[end]) || end == len) {;
+            count++;
+            bgn = end;
+        }
+    }
+
+    return count;
+}
+
+Token *intoTokens(char *str) {
+    int end = 0, bgn = 0, len = strlen(str), count = 0, qty = tokensQty(str);
+
+    Token *tokenList = malloc((sizeof(Token))*qty);
+
+    while(end <= len && bgn <= end) {
+        if(!isDelimiter(str[end]))
+            end++;
+        
+        if(isDelimiter(str[end]) && end == bgn) {
+            if(isOperator(str[end])) {
+                tokenList[count] = *createToken(str, bgn, end, "Operator");
+                count++;
+            }else if(str[end] != ' ') {
+                tokenList[count] = *createToken(str, bgn, end, "Delimiter");
+            }
+            end++; 
+            bgn = end;
+        }else if(isDelimiter(str[end]) || end == len) {;
+            tokenList[count] = *createToken(str, bgn, end, "Typeless");
+            count++;
+            bgn = end;
+        }
+    }
+
+    return tokenList;
+}
+
+void printTokens(char *str, Token *tokens) {
+    for(int i = 0; i < strlen(str); i++) {
+        printf("%s\n", tokens[i].token);
+    }
+}
+
+void lexicalAnalyzer(char *str, Token *tokens) {
+    for(int i = 0; i < tokensQty(str); i++) {
+        if(isKeyword(tokens[i].token))
+            tokens[i].type = "Keyword";
+        else if(isInteger(tokens[i].token))
+            tokens[i].type = "Integer";
+        else if(isDouble(tokens[i].token))
+            tokens[i].type = "Double";
+        else if(isOperator(tokens[i].token[0]))
+            tokens[i].type = "Operator";
+        else if(isDelimiter(tokens[i].token[0]))
+            tokens[i].type = "Delimiter";
+        else if(validIdentifier(tokens[i].token))
+            tokens[i].type = "Identifier";
+        else if(!validIdentifier(tokens[i].token))
+            tokens[i].type = "Invalid identifier";
+    }
+}
+
+void printInfo(char *str,Token *tokenList) {
+    for(int i = 0; i < tokensQty(str); i++) {
+        printf("Token: '%s' | Type: %s\n", tokenList[i].token, tokenList[i].type);
+    }
+}
+
+void main() {
+    char *a = "this is a good string!";
+    char *b = "int a + 15.500 - b + if / 1b + 15;";
+
+    Token *tokenList = intoTokens(b);
+
+    lexicalAnalyzer(b, tokenList);
+
+    //printTokens(b, tokenList);
+    //printf("%d", tokensQty(b));
+    printInfo(b, tokenList);
+
+    free(tokenList);
+}
